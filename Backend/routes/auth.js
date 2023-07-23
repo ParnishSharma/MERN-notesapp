@@ -14,47 +14,41 @@ const JWT_SECRET = 'dollarsignonetime'
 //ROUTE 1 create a user using post:"/api/auth/createuser".No login Required
 
 router.post('/createuser', [
+
+
     body('email', "Enter a valid e-mail: ").isEmail(),
     body('name', "Enter a valid name").isLength({ min: 3 }),
     body('password', "Please enter a password of more than 6 characters").isLength({ min: 6 }),
 ], async (req, res) => {
-
-    //if there are error return bad request and errors
-        
+    let success=false;
+    //if there are error return bad request and errors 
     const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ success ,errors: errors.array() });
         }
-
         try {
         //check weather the user exists already with entered email
         let user = await User.findOne({ email: req.body.email });
         if (user) {
-            return res.status(400).json({ error: "user with email already exists" })
+            return res.status(400).json({success, error: "user with email already exists" })
         }
-
         //creating a password salt
         const salt = await bcrypt.genSalt(10)
         const secPass = await bcrypt.hash(req.body.password, salt);
-
         //CREATE A USER
         user = await User.create({
             name: req.body.name,
             email: req.body.email,
             password: secPass,
         })
-
-
         const data = {
             user: {
                 id: user.id,
             }
         }
-
         const authtoken = jwt.sign(data, JWT_SECRET);
-        res.json({ authtoken })
-
-
+        success=true;
+        res.json({success, authtoken })
     }
     catch (error) {
         console.log(error.message);
@@ -70,6 +64,7 @@ router.post('/login', [
     body('password', "Please enter a vailed password ").exists(),
 
 ], async (req, res) => {
+    let success=false;
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -85,7 +80,8 @@ router.post('/login', [
 
         const passwordcompare = await bcrypt.compare(password, user.password);
         if (!passwordcompare) {
-            return res.status(400).json({ error: "Please enter a vailed credentials" });
+            success=false;
+            return res.status(400).json({ success, error: "Please enter a vailed credentials" });
 
         }
 
@@ -95,7 +91,8 @@ router.post('/login', [
             }
         }
         const authtoken = jwt.sign(data, JWT_SECRET);
-        res.json({ authtoken })
+        success=true;
+        res.json({ success, authtoken })
 
     }
     catch (error) {

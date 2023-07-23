@@ -26,40 +26,39 @@ router.get('/fetchallnotes', fetchuser, async (req, res) => {
 
 //ROUTE 2 post the notes using POST 'api/auth/addnote' 
 
-router.post('/addnote', fetchuser, [
-
-    body('title', "Enter a valid title of more than 1 character").isLength({ min: 1 }),
-    body('description', "Enter a valid description of more than 1 character").isLength({ min: 1 }),
-
-], async (req, res) => {
-
-
+// ROUTE 2: Add a note using POST '/api/notes/addnote'
+router.post(
+  '/addnote',
+  fetchuser,
+  [
+    body('title', 'Enter a valid title of more than 1 character').isLength({ min: 1 }),
+    body('description', 'Enter a valid description of more than 1 character').isLength({ min: 1 }),
+  ],
+  async (req, res) => {
     try {
+      const { title, description, tag } = req.body;
 
-        //destructuring
-        const { title, description, tag } = req.body;
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
 
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        const note = new Note({
+      const note = new Note({
+        title,
+        description,
+        tag,
+        user: req.user.id,
+      });
 
-            title, description, tag, user: req.user.id
+      const savednote = await note.save();
 
-        })
-        const savednote = await note.save()
-
-        res.json(savednote)
-
-        res.json([Note])
+      res.json(savednote);
     } catch (error) {
-        console.log(error.message);
-        res.status(500).send("Internal server error occured");
-
+      console.log(error.message);
+      res.status(500).send('Internal server error occurred');
     }
-})
-
+  }
+);
 
 // ROUTE 3: Update a note using PUT '/api/notes/updatenote/:id'
 router.put('/updatenote/:id', fetchuser, async (req, res) => {
